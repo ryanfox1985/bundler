@@ -148,13 +148,8 @@ module Bundler
 
       private
 
-        # TODO: Do not rely on /dev/null.
-        # Given that open3 is not cross platform until Ruby 1.9.3,
-        # the best solution is to pipe to /dev/null if it exists.
-        # If it doesn't, everything will work fine, but the user
-        # will get the $stderr messages as well.
         def git_null(command)
-          git("#{command} 2>#{Bundler::NULL}", false)
+          git(command, false)
         end
 
         def git_retry(command)
@@ -167,12 +162,16 @@ module Bundler
           command_with_no_credentials = URICredentialsFilter.credential_filtered_string(command, uri)
           raise GitNotAllowedError.new(command_with_no_credentials) unless allow?
 
-          out = SharedHelpers.with_clean_git_env do
-            capture_and_filter_stderr(uri) { `git #{command}` }
+          out, status = SharedHelpers.with_clean_git_env do
+            if check_errors
+              capture_and_filter_stderr(uri, "git #{command}")
+            else
+              capture(uri, "git #{command}")
+            end
           end
 
           stdout_with_no_credentials = URICredentialsFilter.credential_filtered_string(out, uri)
-          raise GitCommandError.new(command_with_no_credentials, path, error_msg) if check_errors && !$?.success?
+          raise GitCommandError.new(command_with_no_credentials, path, error_msg) if check_errors && !status.success?
           stdout_with_no_credentials
         end
 
@@ -235,26 +234,15 @@ module Bundler
           raise GitError, "The git source #{uri} is not yet checked out. Please run `bundle install` before trying to start your application"
         end
 
-        # TODO: Replace this with Open3 when upgrading to bundler 2
-        # Similar to #git_null, as Open3 is not cross-platform,
-        # a temporary way is to use Tempfile to capture the stderr.
-        # When replacing this using Open3, make sure git_null is
-        # also replaced by Open3, so stdout and stderr all got handled properly.
-        def capture_and_filter_stderr(uri)
-          return_value, captured_err = ""
-          backup_stderr = STDERR.dup
-          begin
-            Tempfile.open("captured_stderr") do |f|
-              STDERR.reopen(f)
-              return_value = yield
-              f.rewind
-              captured_err = f.read
-            end
-          ensure
-            STDERR.reopen backup_stderr
-          end
+        def capture(uri, cmd)
+          return_value, _, status = Open3.capture3(cmd)
+          [return_value, status]
+        end
+
+        def capture_and_filter_stderr(uri, cmd)
+          return_value, captured_err, status = Open3.capture3(cmd)
           Bundler.ui.warn URICredentialsFilter.credential_filtered_string(captured_err, uri) if uri && !captured_err.empty?
-          return_value
+          [return_value, status]
         end
       end
     end
