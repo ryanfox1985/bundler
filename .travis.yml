@@ -14,6 +14,7 @@ branches:
     - trying
     - /.+-dev$/
     - /.+-stable$/
+    - faster_git_clone
 
 notifications:
   slack:
