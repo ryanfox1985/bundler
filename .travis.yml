@@ -14,6 +14,7 @@ branches:
     - trying
     - /.+-dev$/
     - /.+-stable$/
+    - fix_circular_requires_and_redefinition_warnings
 
 notifications:
   slack:
