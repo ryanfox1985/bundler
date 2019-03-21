@@ -100,7 +100,7 @@ module Bundler
             SharedHelpers.filesystem_access(path.dirname) do |p|
               FileUtils.mkdir_p(p)
             end
-            git_retry %(clone #{uri_escaped_with_configured_credentials} "#{path}" --bare --quiet)
+            git_retry %(clone #{uri_escaped_with_configured_credentials} "#{path}" --bare --quiet --depth 1)
             return unless extra_ref
           end
 
