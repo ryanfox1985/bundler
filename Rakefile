@@ -74,9 +74,6 @@ namespace :spec do
       # Install graphviz so that the viz specs can run
       sh "sudo apt-get install graphviz -y"
 
-      # Install the gems with a consistent version of RubyGems
-      sh "gem update --system 3.0.3"
-
       # Fix incorrect default gem specifications on ruby 2.6.1. Can be removed
       # when 2.6.2 is released and we start testing against it
       if RUBY_VERSION == "2.6.1"
