@@ -390,16 +390,7 @@ module Spec
       opts = gems.last.is_a?(Hash) ? gems.last : {}
       path = opts.fetch(:path, system_gem_path)
       if path == :bundle_path
-        path = ruby!(<<-RUBY)
-          require "bundler"
-          begin
-            puts Bundler.bundle_path
-          rescue Bundler::GemfileNotFound
-            ENV["BUNDLE_GEMFILE"] = "Gemfile"
-            retry
-          end
-
-        RUBY
+        path = Bundler.bundle_path
       end
       gems = gems.flatten
 
